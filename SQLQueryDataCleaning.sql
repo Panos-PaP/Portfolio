@@ -61,3 +61,55 @@ SET City = SUBSTRING(PropertyAddress,CHARINDEX(',' ,PropertyAddress) + 1, LEN(Pr
 
 
 SELECT PARSENAME(REPLACE(OwnerAddress,',','.'),1) FROM DataCleaningProject..houseData
+
+-----------------------------------------------
+--Change Y and N to Yes and No in column "SoldAsVacant"
+
+SELECT Distinct(SoldAsVacant),Count(SoldAsVacant) FROM DataCleaningProject..houseData
+GROUP BY SoldAsVacant
+
+SELECT SoldAsVacant
+,	CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+		 WHEN SoldAsVacant = 'N' THEN 'No'
+		 ELSE SoldAsVacant
+		 END
+FROM DataCleaningProject..houseData
+
+
+UPDATE DataCleaningProject..houseData
+SET SoldAsVacant = CASE
+	WHEN SoldAsVacant = 'Y' THEN 'Yes'
+	WHEN SoldAsVacant = 'N' THEN 'No'
+	ELSE SoldAsVacant
+	END
+FROM DataCleaningProject..houseData;
+
+
+
+----------------------------------------------
+--Remove Duplicates
+
+WITH RowNumCTE AS(
+SELECT *, ROW_NUMBER() OVER (
+	Partition By ParcelID,
+				 PropertyAddress,
+				 SalePrice,
+				 SaleDateConverted,
+				 LegalReference
+				 ORDER BY UniqueID) RankNum
+
+FROM DataCleaningProject..houseData
+)
+
+-- If Rank Number is bigger than 1,it means that it is duplicated so we delete those rows
+DELETE
+FROM RowNumCTE
+WHERE RankNuM > 1;
+
+
+
+----------------------------------------------
+--Delete Unused Columns
+
+ALTER TABLE  DataCleaningProject..houseData
+DROP COLUMN OwnerAddress,TaxDistrict,PropertyAddress
